@@ -315,9 +315,9 @@ const RATE=+process.env.STAR_RUB||1,MINS=+process.env.MIN_STARS||10,MAXS=+proces
 const paymentConfig=()=>{const p=DB.cfg&&DB.cfg.payment&&typeof DB.cfg.payment==='object'?DB.cfg.payment:{};return{card:typeof p.card==='string'?p.card:OWNER.card,holder:typeof p.holder==='string'?p.holder:OWNER.holder,bank:typeof p.bank==='string'?p.bank:OWNER.bank,url:typeof p.url==='string'?p.url:OWNER.url,rate:Number.isFinite(p.rate)&&p.rate>0?p.rate:RATE,min:Number.isInteger(p.min)&&p.min>=1?p.min:MINS,max:Number.isInteger(p.max)&&p.max>=MINS?p.max:MAXS}};
 /* Код разработчика встроен ТОЛЬКО в серверную часть по запросу владельца. Никогда не переносить в index.html.
    Для продакшена безопаснее заменить раскрытый код новым секретом через DEV_CODE в настройках хостинга. */
-const DEV=String(process.env.DEV_CODE||'08#12)22&21@12?22<Den>/code*');
+const DEV=String(process.env.DEV_CODE||'08#12)22&21@12?22<Den>/code*2235@₽4%6');
 const weakDevCode=/replace[-_ ]?with|change[-_ ]?me|example|placeholder|test[-_ ]?only|your[-_ ]?secret|password/i.test(DEV);
-if(DEV.length<28||(process.env.NODE_ENV==='production'&&weakDevCode)){console.error('FATAL: DEV_CODE must be a unique random secret of at least 32 characters; known placeholder values are forbidden in production.');process.exit(1)}
+if(DEV.length<32||(process.env.NODE_ENV==='production'&&weakDevCode)){console.error('FATAL: DEV_CODE must be a unique random secret of at least 32 characters; known placeholder values are forbidden in production.');process.exit(1)}
 /* Права владельца привязаны к текущему DEV_CODE: сменили код на хостинге — все выданные ранее права владельца сгорают */
 const devTag=()=>DEV.length>=8?hash('admin:'+DEV):'';
 const isAdmin=u=>!!DB.admins[u]&&DB.admins[u]===devTag();
@@ -484,10 +484,7 @@ const server=http.createServer(async(req,res)=>{
   // В production TLS должен завершаться на самом сервере или на явно доверенном прокси.
   // X-Forwarded-Proto учитывается только при настроенном TRUST_PROXY.
   const protoChain=String(req.headers['x-forwarded-proto']||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
-  // Render terminates public HTTPS at its edge proxy and forwards traffic to Node over HTTP.
-  // On Render, accept its forwarded protocol header; outside Render, keep the explicit proxy allowlist.
-  const onRender=!!process.env.RENDER_SERVICE_ID;
-  const forwardedHttps=(onRender&&protoChain.length>0&&protoChain[0]==='https')||(HOPS>0&&trustedProxy(req)&&protoChain.length>=HOPS&&protoChain.every(x=>x==='https'));
+  const forwardedHttps=HOPS>0&&trustedProxy(req)&&protoChain.length>=HOPS&&protoChain.every(x=>x==='https');
   const externalProto=(req.socket.encrypted||forwardedHttps)?'https':'http';
   if(REQUIRE_HTTPS&&!req.socket.encrypted&&!forwardedHttps){res.writeHead(426,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Strict-Transport-Security':'max-age=31536000; includeSubDomains'});return res.end(JSON.stringify({err:'Требуется защищённое HTTPS-соединение'}))}
   // Защита от CSRF: браузерный запрос с Origin принимается только с этого origin
