@@ -484,7 +484,10 @@ const server=http.createServer(async(req,res)=>{
   // В production TLS должен завершаться на самом сервере или на явно доверенном прокси.
   // X-Forwarded-Proto учитывается только при настроенном TRUST_PROXY.
   const protoChain=String(req.headers['x-forwarded-proto']||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
-  const forwardedHttps=HOPS>0&&trustedProxy(req)&&protoChain.length>=HOPS&&protoChain.every(x=>x==='https');
+  const renderHost=String(req.headers.host||'').toLowerCase().split(':')[0].endsWith('.onrender.com');
+  // Render terminates TLS at its edge proxy. Trust its HTTPS indication for onrender.com hosts,
+  // even when TRUST_PROXY_IPS has not been configured; keep the explicit allowlist for other hosts.
+  const forwardedHttps=(renderHost&&protoChain[0]==='https')||(HOPS>0&&trustedProxy(req)&&protoChain.length>=HOPS&&protoChain.every(x=>x==='https'));
   const externalProto=(req.socket.encrypted||forwardedHttps)?'https':'http';
   if(REQUIRE_HTTPS&&!req.socket.encrypted&&!forwardedHttps){res.writeHead(426,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Strict-Transport-Security':'max-age=31536000; includeSubDomains'});return res.end(JSON.stringify({err:'Требуется защищённое HTTPS-соединение'}))}
   // Защита от CSRF: браузерный запрос с Origin принимается только с этого origin
